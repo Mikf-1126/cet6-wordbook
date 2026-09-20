@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>划词单词本 · 界面预览</title>
+<style>
+:root{
+  --ink:#191919; --ink-2:#3A3733; --ink-3:#8A8279; --ink-4:#B5ADA1;
+  --gold:#A2803C; --gold-2:#C9A96A; --gold-hi:#B5914C; --gold-lo:#94712B;
+  --gold-soft:#F5EEE0;
+  --hair:rgba(162,128,60,.16); --hair-2:rgba(162,128,60,.1);
+  --paper:#FFFFFF; --paper-2:#FBF8F3; --paper-3:#F6F1E8;
+  --line:#EBE5DA; --line-2:#F3EEE5;
+  --ff-latin:Georgia,"Times New Roman",serif;
+  --ff-sans:-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+  --sh-btn:inset 0 1px 0 rgba(255,255,255,.28), 0 2px 8px rgba(162,128,60,.25);
+}
+*{ box-sizing:border-box; }
+body{
+  margin:0; padding:0 20px 90px;
+  background:var(--paper-2); color:var(--ink-2);
+  font-family:var(--ff-sans);
+  font-size:15px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.wrap{ max-width:900px; margin:0 auto; }
+
+header.top{
+  padding:60px 0 32px;
+  border-top:3px solid var(--gold-2);
+  border-bottom:1px solid var(--line);
+  margin-bottom:44px;
+}
+.eyebrow{
+  font-size:10.5px; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--gold); font-weight:700; margin:0 0 15px;
+}
+h1{
+  font-size:30px; line-height:1.3; margin:0 0 12px;
+  color:var(--ink); font-weight:700; letter-spacing:-.01em;
+}
+.sub{ font-size:15px; color:var(--ink-3); margin:0; line-height:1.7; }
+
+h2{
+  font-size:19px; color:var(--gold); margin:52px 0 6px;
+  font-weight:700; letter-spacing:.005em;
+}
+h2 .num{ font-family:var(--ff-latin); font-size:14px; color:var(--gold-2); margin-right:9px; font-weight:400; }
+.lead{
+  font-size:13.5px; color:var(--ink-3);
+  margin:0 0 22px; padding-bottom:13px;
+  border-bottom:1px solid var(--line);
+}
+
+/* ============ 1. 划词 ============ */
+.mock{
+  position:relative;
+  background:var(--paper);
+  border:1px solid var(--hair); border-radius:14px;
+  padding:34px 32px 46px; min-height:566px;
+  font-family:var(--ff-latin);
+  font-size:15.5px; line-height:1.9; color:#333;
+  box-shadow:0 1px 2px rgba(25,25,25,.04), 0 6px 18px rgba(162,128,60,.05);
+}
+.mock .site{
+  font-family:var(--ff-sans);
+  font-size:10.5px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--ink-4); margin:0 0 18px;
+}
+.mock h3{ font-size:21px; margin:0 0 15px; color:#111; line-height:1.4; }
+.mock p{ margin:0 0 15px; }
+.sel{ background:#FBF3E2; box-shadow:0 1px 0 var(--gold-2); border-radius:2px; }
+
+.trigger{
+  position:absolute; width:32px; height:32px;
+  border-radius:10px;
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-lo));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 2px 8px rgba(162,128,60,.32);
+  color:#fff; font-family:var(--ff-latin); font-size:15px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+}
+
+.card{
+  position:absolute; width:362px;
+  background:rgba(255,254,251,.9);
+  -webkit-backdrop-filter:blur(18px) saturate(160%);
+  backdrop-filter:blur(18px) saturate(160%);
+  border:1px solid var(--hair);
+  border-radius:14px;
+  box-shadow:0 1px 2px rgba(25,25,25,.06), 0 4px 12px rgba(162,128,60,.07), 0 20px 48px rgba(25,25,25,.14);
+  overflow:hidden;
+  font-family:var(--ff-sans);
+  font-size:14px; line-height:1.6; color:var(--ink-2);
+  text-align:left;
+}
+.card::before{
+  content:""; position:absolute; left:0; top:0; bottom:0; width:2px;
+  background:linear-gradient(180deg,var(--gold-2) 0%,rgba(201,169,106,.45) 42%,rgba(201,169,106,0) 100%);
+  pointer-events:none;
+}
+.wb-head{ display:flex; align-items:flex-start; gap:8px; padding:15px 12px 7px 16px; }
+.wb-word{
+  flex:1; font-family:var(--ff-latin);
+  font-size:22px; font-weight:700; color:var(--ink);
+  letter-spacing:-.015em; line-height:1.28;
+}
+.wb-close{
+  width:24px; height:24px; border:none; background:transparent;
+  color:var(--ink-3); font-size:17px; line-height:1; cursor:pointer;
+  border-radius:7px; display:flex; align-items:center; justify-content:center;
+  opacity:.45;
+}
+.wb-sub{
+  display:flex; align-items:center; gap:7px; flex-wrap:wrap;
+  padding:0 16px 13px; border-bottom:1px solid var(--hair-2);
+}
+.wb-ipa{
+  font-family:var(--ff-sans); font-size:12.5px; color:var(--ink-3);
+  background:rgba(201,169,106,.08); border-radius:6px; padding:2px 8px;
+}
+.wb-tag{
+  font-size:10px; line-height:1; padding:4px 8px; border-radius:20px;
+  background:rgba(201,169,106,.14); color:var(--gold);
+  border:1px solid var(--hair); font-weight:600; letter-spacing:.05em;
+}
+.wb-tag.plain{ background:transparent; color:var(--ink-3); border:1px solid var(--line); font-weight:500; }
+.wb-speak{
+  width:24px; height:24px; border:none; border-radius:7px;
+  background:transparent; color:var(--gold); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; opacity:.45;
+}
+.wb-lemma{
+  flex:0 0 100%;
+  margin-top:9px; padding:5px 9px;
+  background:rgba(201,169,106,.09); border-radius:6px;
+  font-size:11.5px; color:var(--ink-3); line-height:1.5;
+}
+.wb-lemma b{ font-family:var(--ff-latin); font-size:12.5px; color:var(--gold); font-weight:600; }
+.wb-body{ padding:13px 16px 16px; }
+.wb-trans{ margin:0; padding:0; list-style:none; }
+.wb-trans li{ font-size:15px; padding:3px 0; line-height:1.68; }
+.wb-pos{ font-style:normal; color:var(--gold-2); font-size:12.5px; margin-right:3px; }
+.wb-ex{ margin-top:10px; padding:11px 13px; background:rgba(251,248,243,.7); border-radius:11px; }
+.wb-ex-en{ font-family:var(--ff-latin); font-size:13px; color:var(--ink-2); line-height:1.62; }
+.wb-ex-zh{ font-size:12.5px; color:var(--ink-3); margin-top:4px; line-height:1.62; }
+.wb-ctx{
+  margin-top:13px; padding:2px 0 2px 11px;
+  border-left:2px solid rgba(201,169,106,.55);
+  font-size:12px; color:var(--ink-3); line-height:1.72;
+}
+.wb-ctx b{
+  display:block; color:var(--ink-4); font-size:9px;
+  letter-spacing:.16em; margin-bottom:3px; font-weight:600;
+}
+.wb-foot{
+  display:flex; gap:8px; padding:12px 16px 14px;
+  border-top:1px solid var(--hair-2); background:rgba(251,248,243,.62);
+}
+.wb-btn{
+  flex:1; height:34px; border-radius:9px; border:none;
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-lo));
+  color:#fff; font-size:13px; font-weight:700; font-family:inherit;
+  letter-spacing:.015em; cursor:pointer; box-shadow:var(--sh-btn);
+}
+.wb-btn.ghost{
+  background:rgba(255,255,255,.72); color:var(--gold);
+  border:1px solid var(--hair); box-shadow:none; font-weight:600;
+}
+
+/* ============ 2. 弹窗 ============ */
+.popup{
+  width:374px;
+  background:var(--paper-2);
+  border:1px solid var(--hair);
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:0 2px 6px rgba(25,25,25,.05), 0 18px 50px rgba(25,25,25,.14);
+  font-size:13px;
+}
+.pp-hd{
+  display:flex; align-items:center; gap:11px;
+  padding:15px 16px 14px;
+  background:var(--paper); border-bottom:1px solid var(--hair);
+}
+.pp-mark{
+  width:38px; height:38px; border-radius:11px;
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-lo));
+  color:#fff; font-family:var(--ff-latin); font-size:20px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:var(--sh-btn);
+}
+.pp-hd h1{ font-size:15px; margin:0; color:var(--ink); font-weight:700; }
+.pp-hd .sub{ font-size:11.5px; margin:2px 0 0; color:var(--ink-3); }
+.pp-body{ padding:12px; display:flex; flex-direction:column; gap:10px; }
+.panel{
+  background:var(--paper); border:1px solid var(--hair);
+  border-radius:12px; padding:13px 14px;
+  box-shadow:0 1px 2px rgba(25,25,25,.03), 0 6px 18px rgba(162,128,60,.05);
+}
+.panel-title{
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:10px; font-weight:700; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--gold); margin-bottom:10px;
+}
+.panel-title a{ font-size:11.5px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--gold-2); text-decoration:none; }
+.quick{ display:flex; gap:8px; }
+.quick input{
+  flex:1; height:34px; padding:0 12px;
+  border:1px solid var(--line); border-radius:9px;
+  background:var(--paper-2); font-family:inherit; font-size:13px; color:var(--ink-2);
+}
+.quick .btn{ flex:0 0 auto; width:54px; }
+.btn{
+  height:34px; border-radius:9px; border:none;
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-lo));
+  color:#fff; font-family:inherit; font-size:12.5px; font-weight:700;
+  letter-spacing:.015em; cursor:pointer; box-shadow:var(--sh-btn);
+}
+.btn.ghost{
+  background:rgba(255,255,255,.8); color:var(--gold);
+  border:1px solid var(--hair); box-shadow:none; font-weight:600;
+}
+.qr{
+  margin-top:11px; padding:11px 13px;
+  background:rgba(251,248,243,.72);
+  border-left:2px solid rgba(201,169,106,.55);
+  border-radius:0 9px 9px 0;
+}
+.qr .qr-word{ font-family:var(--ff-latin); font-size:18px; font-weight:700; color:var(--ink); letter-spacing:-.012em; }
+.qr .qr-sub{ font-family:var(--ff-sans); font-size:12px; color:var(--ink-3); margin-top:3px; }
+.qr .qr-tags{ margin-top:7px; display:flex; gap:5px; }
+.qr .qr-tags i{
+  font-style:normal; font-size:10px; line-height:1; padding:4px 7px;
+  border-radius:20px; background:rgba(201,169,106,.14); color:var(--gold);
+  border:1px solid var(--hair); font-weight:600; letter-spacing:.05em;
+}
+.qr .qr-trans{ margin-top:9px; font-size:14px; }
+.qr .qr-trans .wb-pos{ font-style:normal; color:var(--gold-2); font-size:12px; margin-right:3px; }
+.qr .btn{ margin-top:11px; width:100%; }
+.recent{ list-style:none; margin:0; padding:0; }
+.recent li{ display:flex; align-items:baseline; gap:9px; padding:7px 0; }
+.recent li + li{ border-top:1px solid var(--line-2); }
+.recent .w{ font-family:var(--ff-latin); font-size:13.5px; font-weight:700; color:var(--ink); max-width:132px; }
+.recent .t{ flex:1; font-size:12px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.recent .tag{
+  font-size:10px; line-height:1; padding:4px 7px; border-radius:20px;
+  background:rgba(201,169,106,.14); color:var(--gold);
+  border:1px solid var(--hair); font-weight:600; letter-spacing:.05em;
+}
+.row{ display:flex; align-items:center; justify-content:space-between; padding:7px 0; }
+.row + .row{ border-top:1px solid var(--line-2); }
+.row label{ font-size:13px; }
+.row .fake-select{
+  font-size:12.5px; color:var(--ink-2); background:var(--paper-2);
+  border:1px solid var(--line); border-radius:8px; padding:5px 9px;
+}
+.btns{ display:flex; gap:8px; }
+.btns .btn{ flex:1; }
+.hint{ margin:9px 0 0; font-size:11.5px; color:var(--ink-3); line-height:1.65; }
+.hint .ok{ color:#3B6D11; font-weight:600; }
+
+/* ============ 3. 单词本 ============ */
+.nb{
+  position:relative;
+  background:var(--paper); border:1px solid var(--hair);
+  border-radius:14px;
+  padding:17px 19px 15px; overflow:hidden;
+  box-shadow:0 1px 2px rgba(25,25,25,.04), 0 6px 18px rgba(162,128,60,.05);
+}
+.nb::before{
+  content:""; position:absolute; left:0; top:0; bottom:0; width:2px;
+  background:linear-gradient(180deg,var(--gold-2) 0%,rgba(201,169,106,.45) 38%,rgba(201,169,106,0) 100%);
+}
+.nb-top{ display:flex; align-items:flex-start; gap:12px; }
+.nb-word{ font-family:var(--ff-latin); font-size:22px; font-weight:700; color:var(--ink); letter-spacing:-.015em; line-height:1.28; }
+.nb-tags{ display:flex; gap:5px; margin-top:6px; }
+.nb-tags .tag{
+  font-size:10px; line-height:1; padding:4px 8px; border-radius:20px;
+  background:rgba(201,169,106,.14); color:var(--gold);
+  border:1px solid var(--hair); font-weight:600; letter-spacing:.05em;
+}
+.nb-acts{ display:flex; gap:3px; }
+.iconbtn{
+  width:30px; height:30px; border:none; border-radius:8px;
+  background:transparent; color:var(--ink-3); cursor:pointer; font-size:14px;
+  display:flex; align-items:center; justify-content:center; opacity:.45;
+}
+.iconbtn.on{ opacity:1; color:var(--gold-2); }
+.nb-ipa{ font-family:var(--ff-sans); font-size:13px; color:var(--ink-3); margin-top:4px; }
+.origin{
+  display:inline-block; margin-top:8px; padding:4px 9px;
+  background:rgba(201,169,106,.09); border-radius:6px;
+  font-size:11.5px; color:var(--ink-3); line-height:1.5;
+}
+.origin b{ font-family:var(--ff-latin); font-size:12.5px; color:var(--gold); font-weight:600; }
+.nb-trans{ margin:10px 0 0; padding:0; list-style:none; }
+.nb-trans li{ font-size:15px; padding:2px 0; line-height:1.68; }
+.nb-note{
+  width:100%; margin-top:12px;
+  border:1px solid var(--line); border-radius:9px;
+  padding:9px 12px; background:var(--paper-2);
+  font-family:inherit; font-size:13px; color:var(--ink-2);
+  resize:vertical; line-height:1.6;
+}
+.nb-meta{
+  margin-top:11px; padding-top:10px; border-top:1px solid var(--hair-2);
+  display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  font-size:11.5px; color:var(--ink-4);
+}
+.nb-meta a{ color:var(--gold-2); text-decoration:none; }
+
+/* ============ 4. 复习 ============ */
+.review{
+  max-width:540px; margin:0 auto;
+  background:var(--paper); border:1px solid var(--hair); border-radius:16px; overflow:hidden;
+  box-shadow:0 24px 70px rgba(0,0,0,.16);
+}
+.review-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:15px 16px 13px; background:var(--paper-2);
+  border-bottom:1px solid var(--hair);
+}
+.progress{ font-family:var(--ff-latin); font-size:12px; color:var(--ink-3); letter-spacing:.08em; }
+.review-body{
+  padding:38px 30px; text-align:center;
+  display:flex; flex-direction:column; align-items:center;
+}
+.rv-word{ font-family:var(--ff-latin); font-size:34px; font-weight:700; color:var(--ink); line-height:1.3; letter-spacing:-.015em; }
+.rv-hint{ margin-top:16px; font-size:13px; color:var(--ink-4); }
+.rv-answer{ width:100%; margin-top:24px; padding-top:22px; border-top:1px solid var(--line); }
+.rv-ipa{ font-family:var(--ff-sans); font-size:15px; color:var(--ink-3); }
+.rv-trans{ margin-top:13px; font-size:16px; color:var(--ink-2); }
+.rv-trans .wb-pos{ font-style:normal; color:var(--gold-2); font-size:13px; margin-right:4px; }
+.rv-ex{ margin-top:15px; font-size:12.5px; color:var(--ink-3); font-family:var(--ff-latin); }
+.review-foot{
+  display:flex; gap:10px; padding:15px 16px 17px;
+  border-top:1px solid var(--hair); background:var(--paper-2);
+}
+.review-foot .btn{ flex:1; }
+
+footer{
+  margin-top:60px; padding-top:24px;
+  border-top:1px solid var(--line);
+  font-size:12.5px; color:var(--ink-4); line-height:1.8;
+}
+@media (max-width:720px){
+  .popup{ width:100%; }
+  .card{ position:static; width:100%; margin-top:16px; }
+  .trigger{ display:none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">Interface Preview</p>
+  <h1>划词单词本 · 界面预览</h1>
+  <p class="sub">这是静态样式预览。实际使用时，卡片会出现在你选中的文字旁边，弹窗和单词本是独立界面。</p>
+</header>
+
+<h2><span class="num">01</span>在网页上划词</h2>
+<p class="lead">选中文字后，选区旁出现「译」按钮；点它展开卡片。卡片是半透明磨砂玻璃，在任意网页背景上都能浮起来。<br>
+选中变形词（如 Practices）时，卡片会自动还原成原形，并标明你选中的是哪个形式。</p>
+
+<div class="mock">
+  <p class="site">The Conversation · Food and farming</p>
+  <h3>Why the way we farm is the real climate question</h3>
+  <p><span class="sel">Practices</span> that were once standard are now under scrutiny. For decades the
+  debate has focused on energy, but a growing number of researchers argue that the sustainability of
+  current farming deserves at least as much attention — soil degradation and biodiversity loss are
+  both accelerating.</p>
+  <p>Critics say that <span class="sel">inadequate regulation</span> has allowed the problem to compound,
+  while the incentives facing farmers still reward short-term yield over long-term resilience.</p>
+
+  <div class="trigger" style="left:112px; top:114px;">译</div>
+
+  <div class="card" style="left:330px; top:138px;">
+    <div class="wb-head">
+      <div class="wb-word">practice</div>
+      <button class="wb-close">×</button>
+    </div>
+    <div class="wb-sub">
+      <span class="wb-ipa">/ˈpræktɪs/</span>
+      <button class="wb-speak">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
+      </button>
+      <span class="wb-tag">CET6</span>
+      <span class="wb-tag plain">考研</span>
+      <div class="wb-lemma">选中形式 <b>Practices</b>　→　原形 <b>practice</b></div>
+    </div>
+    <div class="wb-body">
+      <ol class="wb-trans"><li><span class="wb-pos">n.</span> 实践；练习；惯例，习惯做法；（医生或律师的）工作</li></ol>
+      <div class="wb-ex">
+        <div class="wb-ex-en">It is common practice for companies to test new products on a small group of users first.</div>
+        <div class="wb-ex-zh">公司先在一小群用户身上测试新产品，这是常见的做法。</div>
+      </div>
+      <div class="wb-ctx"><b>原文上下文</b>Practices that were once standard are now under scrutiny.</div>
+    </div>
+    <div class="wb-foot">
+      <button class="wb-btn">加入单词本</button>
+      <button class="wb-btn ghost">复制</button>
+    </div>
+  </div>
+</div>
+
+<h2><span class="num">02</span>扩展弹窗</h2>
+<p class="lead">点工具栏图标打开。所有面板改成卡片式，层级更清楚。</p>
+
+<div class="popup">
+  <div class="pp-hd">
+    <div class="pp-mark">译</div>
+    <div>
+      <h1>划词单词本</h1>
+      <p class="sub">共 128 条 · 六级词 74 条 · 今日新增 9 条</p>
+    </div>
+  </div>
+  <div class="pp-body">
+
+    <div class="panel">
+      <div class="panel-title">快速查词</div>
+      <div class="quick">
+        <input type="text" value="inadequate" readonly>
+        <button class="btn">查</button>
+      </div>
+      <div class="qr">
+        <div class="qr-word">inadequate</div>
+        <div class="qr-sub">/ɪnˈædɪkwət/</div>
+        <div class="qr-tags"><i>CET6</i><i>IELTS</i><i>GRE</i></div>
+        <div class="qr-trans"><span class="wb-pos">adj.</span> 不充分的，不足的，不够好的</div>
+        <button class="btn">加入单词本</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><span>最近添加</span><a href="#">全部 ›</a></div>
+      <ul class="recent">
+        <li><span class="w">sustainability</span><span class="t">n. 持续性，能维持性</span><span class="tag">CET6</span></li>
+        <li><span class="w">inadequate</span><span class="t">adj. 不充分的，不足的</span><span class="tag">CET6</span></li>
+        <li><span class="w">resilience</span><span class="t">n. 恢复力，韧性</span><span class="tag">CET6</span></li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">设置</div>
+      <div class="row"><label>划词触发</label><span class="fake-select">选中后显示「译」按钮</span></div>
+      <div class="row"><label>显示例句</label><span class="fake-select">已开启</span></div>
+      <div class="row"><label>例句条数</label><span class="fake-select">2 条</span></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">诊断</div>
+      <div class="btns">
+        <button class="btn ghost">检测当前页面</button>
+        <button class="btn ghost">检测翻译源</button>
+      </div>
+      <p class="hint"><span class="ok">已注入，可以正常划词。</span></p>
+    </div>
+
+  </div>
+</div>
+
+<h2><span class="num">03</span>单词本条目</h2>
+<p class="lead">带原文上下文、来源页面和自己的备注。★ 收藏，✓ 标记已掌握。</p>
+
+<div class="nb">
+  <div class="nb-top">
+    <div style="flex:1">
+      <div class="nb-word">practice</div>
+      <div class="nb-tags"><span class="tag">CET4</span><span class="tag">CET6</span><span class="tag">考研</span></div>
+    </div>
+    <div class="nb-acts">
+      <button class="iconbtn on">★</button>
+      <button class="iconbtn">✓</button>
+      <button class="iconbtn">×</button>
+    </div>
+  </div>
+  <div class="nb-ipa">/ˈpræktɪs/</div>
+  <div class="origin">选中形式 <b>Practices</b></div>
+  <ol class="nb-trans"><li><span class="wb-pos">n.</span> 实践；练习；惯例，习惯做法</li></ol>
+  <div class="wb-ex">
+    <div class="wb-ex-en">If these messages of ethics and sustainability resonate with them, you get a ripple effect.</div>
+    <div class="wb-ex-zh">如果这些道德和可持续性的讯息可以让他们产生共鸣，你就可以得到连锁反应。</div>
+  </div>
+  <div class="wb-ctx"><b>原文上下文</b>But a growing number of researchers argue that the sustainability of current farming practices deserves at least as much attention.</div>
+  <textarea class="nb-note" rows="2">记：sustain（维持）+ ability（能力）→ 能维持下去的性质</textarea>
+  <div class="nb-meta">
+    <span>2026-09-17 · 查过 3 次</span>
+    <span>来源：<a href="#">The Conversation · Food and farming</a></span>
+  </div>
+</div>
+
+<h2><span class="num">04</span>复习模式</h2>
+<p class="lead">先看英文回想，翻答案核对，记住的打勾。</p>
+
+<div class="review">
+  <div class="review-head">
+    <span class="progress">7 / 24</span>
+    <button class="wb-close">×</button>
+  </div>
+  <div class="review-body">
+    <div class="rv-word">sustainability</div>
+    <div class="rv-hint">先回想意思，再点「再看看」核对</div>
+    <div class="rv-answer">
+      <div class="rv-ipa">/səˌsteɪnəˈbɪləti/</div>
+      <div class="rv-trans"><span class="wb-pos">n.</span> 持续性，能维持性</div>
+      <div class="rv-ex">If these messages of ethics and sustainability resonate with them…</div>
+    </div>
+  </div>
+  <div class="review-foot">
+    <button class="btn ghost">再看看</button>
+    <button class="btn">记住了</button>
+  </div>
+</div>
+
+<footer>
+  预览页为静态样式复刻，用于确认视觉效果。实际交互（悬停、朗读、拖拽、复习翻转、导出）需在装好扩展后体验。<br>
+  更新到这一版：在 <b>edge://extensions/</b> 点「重新加载」，然后刷新网页。
+</footer>
+
+</div>
+</body>
+</html>

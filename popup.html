@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>划词单词本</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+<header class="hd">
+  <div class="mark">译</div>
+  <div class="hd-txt">
+    <h1>划词单词本</h1>
+    <p class="sub" id="stat">加载中…</p>
+  </div>
+</header>
+
+<main class="body">
+
+  <section class="panel">
+    <div class="panel-title">快速查词</div>
+    <div class="quick">
+      <input type="text" id="quickInput" placeholder="粘贴单词或句子…" autocomplete="off">
+      <button class="btn" id="quickGo">查</button>
+    </div>
+    <div class="quick-result" id="quickResult" hidden></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">
+      <span>最近添加</span>
+      <a href="#" id="openNotebook" class="link">全部 ›</a>
+    </div>
+    <ul class="recent" id="recent"></ul>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">设置</div>
+
+    <div class="row">
+      <label for="trigger">划词触发</label>
+      <select id="trigger">
+        <option value="button">选中后显示「译」按钮</option>
+        <option value="auto">选中即翻译</option>
+        <option value="off">关闭（仅右键菜单）</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label for="showExamples">显示例句</label>
+      <input type="checkbox" id="showExamples">
+    </div>
+
+    <div class="row">
+      <label for="maxExamples">例句条数</label>
+      <select id="maxExamples">
+        <option value="1">1 条</option>
+        <option value="2">2 条</option>
+        <option value="3">3 条</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label for="autoSave">选中即自动存词</label>
+      <input type="checkbox" id="autoSave">
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">诊断</div>
+    <div class="btns">
+      <button class="btn ghost" id="testPage">检测当前页面</button>
+      <button class="btn ghost" id="testApi">检测翻译源</button>
+    </div>
+    <p class="hint" id="pageResult">选中单词没反应时，先点「检测当前页面」。</p>
+    <p class="hint" id="apiResult">翻译异常时，点「检测翻译源」。</p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">导出</div>
+    <div class="btns">
+      <button class="btn" id="exportDocx">导出 Word 文档</button>
+    </div>
+    <div class="btns">
+      <button class="btn ghost" id="exportHtml">网页</button>
+      <button class="btn ghost" id="exportXlsx">Excel</button>
+    </div>
+    <div class="btns">
+      <button class="btn ghost" id="exportAnki">Anki</button>
+      <button class="btn ghost" id="exportCsv">CSV</button>
+    </div>
+    <p class="hint">Word / 网页 是排版好的版本，可直接打印；Excel / CSV 是数据表；Anki 可直接导入。</p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">数据</div>
+    <div class="btns">
+      <button class="btn danger" id="clearAll">清空全部</button>
+    </div>
+  </section>
+
+</main>
+
+<footer class="ft">
+  选中任意网页上的单词或句子即可使用<br>数据仅保存在本机
+</footer>
+
+<script src="popup.js"></script>
+</body>
+</html>

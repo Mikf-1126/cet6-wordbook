@@ -1,0 +1,60 @@
+{
+  "manifest_version": 3,
+  "name": "划词单词本 · CET-6",
+  "version": "1.5.0",
+  "description": "在任意网页选中单词或句子，即时显示音标、释义、例句与考纲标签，一键存入本地单词本，可导出 CSV / Anki。",
+  "minimum_chrome_version": "102",
+  "permissions": [
+    "storage",
+    "contextMenus",
+    "declarativeNetRequest",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://dict.youdao.com/*",
+    "https://api.mymemory.translated.net/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "youdao_origin",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "file:///*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true,
+      "match_about_blank": true
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "划词单词本",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        { "header": "Origin", "operation": "set", "value": "https://dict.youdao.com" },
+        { "header": "Referer", "operation": "set", "value": "https://dict.youdao.com/" }
+      ]
+    },
+    "condition": {
+      "urlFilter": "||dict.youdao.com/",
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  }
+]

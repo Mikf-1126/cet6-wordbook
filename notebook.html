@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>我的单词本</title>
+<link rel="stylesheet" href="notebook.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-inner">
+    <div class="brand">
+      <div class="mark">译</div>
+      <div>
+        <h1>我的单词本</h1>
+        <p class="sub" id="stat">加载中…</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="btn" id="btnReview">开始复习</button>
+      <div class="menu-wrap">
+        <button class="btn ghost" id="btnExport">导出 <span class="caret">▾</span></button>
+        <div class="menu" id="exportMenu" hidden>
+          <button data-fmt="docx"><b>Word 文档</b><i>.docx · 排版好，可直接打印</i></button>
+          <button data-fmt="xlsx"><b>Excel 表格</b><i>.xlsx · 带表头样式、冻结首行、可筛选</i></button>
+          <button data-fmt="html"><b>网页</b><i>.html · 自包含，浏览器里可打印成 PDF</i></button>
+          <button data-fmt="anki"><b>Anki 卡片</b><i>.txt · 卡片带样式，直接导入 Anki</i></button>
+          <button data-fmt="csv"><b>CSV 数据</b><i>.csv · 纯数据，给别的程序用</i></button>
+          <button data-fmt="json"><b>JSON 备份</b><i>.json · 完整备份，可重新导入</i></button>
+        </div>
+      </div>
+      <button class="btn ghost" id="btnImport">导入</button>
+      <input type="file" id="fileInput" accept=".json" hidden>
+    </div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="wrap toolbar-inner">
+    <input type="search" id="search" placeholder="搜索单词、释义或上下文…">
+    <div class="chips" id="chips">
+      <button class="chip on" data-f="all">全部</button>
+      <button class="chip" data-f="cet6">六级词</button>
+      <button class="chip" data-f="exam">考纲词</button>
+      <button class="chip" data-f="star">收藏</button>
+      <button class="chip" data-f="todo">未掌握</button>
+      <button class="chip" data-f="done">已掌握</button>
+      <button class="chip" data-f="sentence">句子</button>
+    </div>
+    <select id="sort">
+      <option value="new">最新添加</option>
+      <option value="old">最早添加</option>
+      <option value="hits">查词次数</option>
+      <option value="az">A → Z</option>
+    </select>
+  </div>
+</div>
+
+<main class="wrap">
+  <div id="list" class="list"></div>
+  <div id="empty" class="empty" hidden>
+    <p class="empty-title">这里还是空的</p>
+    <p class="empty-sub">去任意英文网页选中单词或句子，点「加入单词本」就会出现在这里。</p>
+  </div>
+</main>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="review">
+    <div class="review-head">
+      <span class="progress" id="rvProgress"></span>
+      <button class="close" id="rvClose">×</button>
+    </div>
+    <div class="review-body" id="rvBody"></div>
+    <div class="review-foot">
+      <button class="btn ghost" id="rvAgain">再看看</button>
+      <button class="btn" id="rvKnown">记住了</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="notebook.js"></script>
+</body>
+</html>
