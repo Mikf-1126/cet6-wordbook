@@ -94,13 +94,41 @@ function demoSend(msg) {
   }
 }
 
+/* 扩展被「重新加载」后，已打开的单词本标签页会与扩展失联：
+   chrome.runtime.id 变 undefined，报 "Extension context invalidated"。只能刷新页面。 */
+function ctxDead() {
+  try {
+    return !(typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id);
+  } catch (e) {
+    return true;
+  }
+}
+
 function send(msg) {
   if (IS_DEMO) return demoSend(msg);
+  if (ctxDead()) return Promise.resolve({ ok: false, dead: true, error: '扩展上下文已失效' });
   return new Promise(function (resolve) {
-    chrome.runtime.sendMessage(msg, function (res) {
-      resolve(chrome.runtime.lastError ? { ok: false, error: chrome.runtime.lastError.message } : (res || { ok: false }));
-    });
+    try {
+      chrome.runtime.sendMessage(msg, function (res) {
+        if (chrome.runtime.lastError) {
+          const m = String(chrome.runtime.lastError.message || '');
+          resolve({ ok: false, dead: /context invalidated/i.test(m) || ctxDead(), error: m });
+        } else {
+          resolve(res || { ok: false, error: '没有响应' });
+        }
+      });
+    } catch (e) {
+      const m = String((e && e.message) || e);
+      resolve({ ok: false, dead: /context invalidated/i.test(m) || ctxDead(), error: m });
+    }
   });
+}
+
+/** 统一的失败提示：上下文失效时说人话 */
+function failMsg(res, fallback) {
+  return res && res.dead
+    ? '扩展已更新，刷新页面（F5）后即可继续'
+    : ((res && res.error) || fallback || '操作失败');
 }
 
 function el(tag, cls, text) {
@@ -160,7 +188,7 @@ async function exportAs(fmt, btn) {
   const res = await send({ type: 'EXPORT', format: fmt });
   if (btn) { btn.disabled = false; btn.innerHTML = old; }
 
-  if (!res.ok) { toast('导出失败：' + (res.error || '未知错误')); return; }
+  if (!res.ok) { toast('导出失败：' + failMsg(res, '未知错误')); return; }
 
   const blob = res.base64
     ? new Blob([b64ToBytes(res.base64)], { type: res.mime })
@@ -592,7 +620,7 @@ if (IS_DEMO) {
 
 async function load() {
   const res = await send({ type: 'LIST' });
-  if (!res.ok) { $('stat').textContent = '读取失败：' + (res.error || ''); return; }
+  if (!res.ok) { $('stat').textContent = '读取失败：' + failMsg(res, ''); return; }
   WORDS = res.words || [];
   render();
 }

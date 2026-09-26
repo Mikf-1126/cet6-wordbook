@@ -10,14 +10,25 @@ function send(msg) {
   return new Promise(function (resolve) {
     try {
       chrome.runtime.sendMessage(msg, function (res) {
-        resolve(chrome.runtime.lastError
-          ? { ok: false, error: chrome.runtime.lastError.message }
-          : (res || { ok: false, error: '没有响应' }));
+        if (chrome.runtime.lastError) {
+          const m = String(chrome.runtime.lastError.message || '');
+          resolve({ ok: false, dead: /context invalidated/i.test(m), error: m });
+        } else {
+          resolve(res || { ok: false, error: '没有响应' });
+        }
       });
     } catch (e) {
-      resolve({ ok: false, error: String((e && e.message) || e) });
+      const m = String((e && e.message) || e);
+      resolve({ ok: false, dead: /context invalidated/i.test(m), error: m });
     }
   });
+}
+
+/** 上下文失效时说人话 */
+function failMsg(res, fallback) {
+  return res && res.dead
+    ? '扩展已更新，关掉这个弹窗重新打开即可'
+    : ((res && res.error) || fallback || '操作失败');
 }
 
 function download(filename, content, mime) {
@@ -47,7 +58,7 @@ async function exportAs(fmt, btn) {
   if (btn) { btn.disabled = false; btn.textContent = old; }
 
   if (!res.ok) {
-    alert('导出失败：' + (res.error || '未知错误'));
+    alert('导出失败：' + failMsg(res, '未知错误'));
     return;
   }
   const blob = res.base64
@@ -119,7 +130,7 @@ function renderStat(words) {
 
 async function load() {
   const res = await send({ type: 'LIST' });
-  if (!res.ok) { $('stat').textContent = '读取失败：' + (res.error || ''); return; }
+  if (!res.ok) { $('stat').textContent = '读取失败：' + failMsg(res, ''); return; }
 
   renderStat(res.words || []);
   renderRecent(res.words || []);
@@ -160,7 +171,7 @@ function bindActions() {
 
     box.innerHTML = '';
     if (!res.ok) {
-      box.appendChild(el('div', 'qr-err', res.error || '查询失败'));
+      box.appendChild(el('div', 'qr-err', failMsg(res, '查询失败')));
       return;
     }
     const d = res.data;

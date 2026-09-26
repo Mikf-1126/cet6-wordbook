@@ -160,6 +160,9 @@ h2 .num{ font-family:var(--ff-latin); font-size:14px; color:var(--gold-2); margi
 .wb-phr-zh{ font-size:13px; color:var(--ink-2); }
 .wb-phr-en{ font-family:var(--ff-latin); font-size:12.5px; color:var(--ink-3); margin-top:2px; line-height:1.55; }
 .card.flat{ position:static; width:380px; max-width:100%; margin:0 auto; }
+.wb-state{ padding:22px 6px; text-align:center; color:var(--ink-3); font-size:13px; line-height:1.7; }
+.wb-state .wb-dim{ color:var(--ink-4); font-size:12.5px; margin-top:7px; }
+.wb-state .wb-btn{ width:auto; padding:0 22px; margin-top:16px; }
 .wb-body{ padding:13px 16px 16px; }
 .wb-trans{ margin:0; padding:0; list-style:none; }
 .wb-trans li{ font-size:15px; padding:3px 0; line-height:1.68; }
@@ -579,6 +582,24 @@ footer{
   <div class="review-foot">
     <button class="btn ghost">再看看</button>
     <button class="btn">记住了</button>
+  </div>
+</div>
+
+<h2><span class="num">06</span>扩展更新之后</h2>
+<p class="lead">在扩展管理页点过「重新加载」、但页面还没刷新时，页面里跑的还是旧版本脚本。这时给一个能一键解决的提示，而不是甩一句英文报错。</p>
+
+<div class="card flat" style="width:340px;">
+  <div class="wb-head">
+    <div class="wb-word">需要刷新页面</div>
+    <button class="wb-close">×</button>
+  </div>
+  <div class="wb-body">
+    <div class="wb-state">
+      <div>扩展刚刚更新过，</div>
+      <div>当前页面里运行的还是旧版本。</div>
+      <div class="wb-dim">刷新一下就能继续用。</div>
+      <button class="wb-btn">刷新页面</button>
+    </div>
   </div>
 </div>
 

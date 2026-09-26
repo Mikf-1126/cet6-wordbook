@@ -360,6 +360,8 @@
   line-height: 1.7;
 }
 .wb-state .wb-err{ color: #A32D2D; }
+.wb-state .wb-dim{ color: var(--ink-4); font-size: 12.5px; margin-top: 7px; }
+.wb-state .wb-btn{ width: auto; padding: 0 22px; margin-top: 16px; }
 .wb-link{
   display: inline-block; margin-top: 10px;
   color: var(--gold); cursor: pointer; font-size: 12.5px; font-weight: 600;
@@ -405,18 +407,37 @@
     return li;
   }
 
+  /* 扩展被「重新加载」后，已经打开页面里的旧内容脚本会失联：
+     chrome.runtime.id 变成 undefined，发消息抛 "Extension context invalidated"。
+     这种状态没法自愈，只能刷新页面，所以要单独识别出来给个能一键解决的提示，
+     而不是把英文报错甩给用户。 */
+  function ctxDead() {
+    try {
+      return !(typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id);
+    } catch (e) {
+      return true;
+    }
+  }
+
+  function isDeadMsg(m) {
+    return /context invalidated|message port closed|receiving end does not exist/i.test(String(m || ''));
+  }
+
   function send(msg) {
+    if (ctxDead()) return Promise.resolve({ ok: false, dead: true, error: '扩展上下文已失效' });
     return new Promise(function (resolve) {
       try {
         chrome.runtime.sendMessage(msg, function (res) {
           if (chrome.runtime.lastError) {
-            resolve({ ok: false, error: chrome.runtime.lastError.message });
+            const m = String(chrome.runtime.lastError.message || '');
+            resolve({ ok: false, dead: isDeadMsg(m) || ctxDead(), error: m });
           } else {
             resolve(res || { ok: false, error: '没有响应' });
           }
         });
       } catch (e) {
-        resolve({ ok: false, error: String(e && e.message || e) });
+        const m = String((e && e.message) || e);
+        resolve({ ok: false, dead: isDeadMsg(m) || ctxDead(), error: m });
       }
     });
   }
@@ -751,6 +772,35 @@
     placeCard(pendingRange);
   }
 
+  /* 上下文失效时的专用卡片：说人话 + 一键刷新 */
+  function renderNeedReload() {
+    const root = uiRoot();
+    if (cardEl) cardEl.remove();
+    cardEl = el('div', 'wb-card');
+
+    const head = el('div', 'wb-head');
+    head.appendChild(el('div', 'wb-word', '需要刷新页面'));
+    const close = el('button', 'wb-close', '×');
+    close.title = '关闭';
+    close.addEventListener('click', closeCard);
+    head.appendChild(close);
+
+    const body = el('div', 'wb-body');
+    const st = el('div', 'wb-state');
+    st.appendChild(el('div', null, '扩展刚刚更新过，'));
+    st.appendChild(el('div', null, '当前页面里运行的还是旧版本。'));
+    st.appendChild(el('div', 'wb-dim', '刷新一下就能继续用。'));
+    const btn = el('button', 'wb-btn', '刷新页面');
+    btn.addEventListener('click', function () { location.reload(); });
+    st.appendChild(btn);
+    body.appendChild(st);
+
+    cardEl.appendChild(head);
+    cardEl.appendChild(body);
+    root.appendChild(cardEl);
+    placeCard(pendingRange);
+  }
+
   function renderError(text, message, retryFn) {
     const root = uiRoot();
     if (cardEl) cardEl.remove();
@@ -792,10 +842,13 @@
   async function openCard(text, range) {
     pendingRange = range || null;
     hideTrigger();
+
+    if (ctxDead()) { renderNeedReload(); return; }
     renderLoading(text);
 
     const res = await send({ type: 'TRANSLATE', text: text });
     if (!res.ok) {
+      if (res.dead) { renderNeedReload(); return; }
       renderError(text, res.error || '翻译失败', function () { openCard(text, pendingRange); });
       return;
     }
@@ -915,12 +968,16 @@
     } else if (msg.type === 'WB_SAVE_SELECTION') {
       (async function () {
         const res = await send({ type: 'TRANSLATE', text: msg.text });
-        if (!res.ok) { toast(res.error || '翻译失败'); return; }
+        if (!res.ok) {
+          toast(res.dead ? '扩展已更新，请刷新页面后再存词' : (res.error || '翻译失败'));
+          return;
+        }
         const d = res.data;
         const saved = await send({
           type: 'SAVE',
           entry: {
             text: d.text, origin: d.inflected && d.query ? d.query : '',
+            lang: d.lang || 'en', ens: d.ens || [], phrases: d.phrases || [],
             kind: d.kind || 'word', phonetic: d.phonetic || '',
             trans: d.trans || [], examples: d.examples || [], forms: d.forms || [],
             tags: d.tags || [], context: '',
