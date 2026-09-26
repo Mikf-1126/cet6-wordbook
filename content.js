@@ -199,6 +199,53 @@
   font-weight: 600;
 }
 
+/* ---------- 中文查英文（汉→英）---------- */
+.wb-word.is-zh{
+  font-family: var(--ff-sans);
+  font-size: 24px;
+  letter-spacing: .02em;
+}
+.wb-en{ margin-bottom: 11px; }
+.wb-en:last-child{ margin-bottom: 0; }
+.wb-en-head{ display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
+.wb-en-word{
+  font-family: var(--ff-latin);
+  font-size: 17.5px; font-weight: 700;
+  color: var(--gold);
+  letter-spacing: -.012em; line-height: 1.3;
+  word-break: break-word;
+}
+.wb-en-pos{
+  font-size: 9.5px; line-height: 1;
+  color: var(--gold-2);
+  border: 1px solid var(--hair);
+  border-radius: 20px;
+  padding: 3px 7px;
+  letter-spacing: .05em;
+  font-weight: 600;
+}
+.wb-en-zh{
+  font-size: 12.5px; color: var(--ink-3);
+  margin-top: 4px; line-height: 1.62;
+}
+.wb-sec{
+  font-size: 9px; letter-spacing: .16em;
+  color: var(--ink-4); font-weight: 600;
+  margin-bottom: 9px;
+}
+.wb-phr{ margin-top: 13px; }
+.wb-phr-item{
+  padding: 7px 0;
+  border-bottom: 1px solid var(--hair-2);
+}
+.wb-phr-item:last-child{ border-bottom: none; padding-bottom: 0; }
+.wb-phr-zh{ font-size: 13px; color: var(--ink-2); }
+.wb-phr-en{
+  font-family: var(--ff-latin);
+  font-size: 12.5px; color: var(--ink-3);
+  margin-top: 2px; line-height: 1.55;
+}
+
 .wb-body{
   padding: 13px 16px 16px;
   max-height: 332px;
@@ -568,8 +615,9 @@
     cardEl = el('div', 'wb-card');
     const anchor = pendingRange;
 
+    const isZh = result.lang === 'zh';
     const head = el('div', 'wb-head');
-    const word = el('div', 'wb-word', result.text);
+    const word = el('div', isZh ? 'wb-word is-zh' : 'wb-word', result.text);
     const close = el('button', 'wb-close', '×');
     close.title = '关闭';
     close.addEventListener('click', closeCard);
@@ -577,11 +625,17 @@
     head.appendChild(close);
 
     const sub = el('div', 'wb-sub');
-    if (result.phonetic) sub.appendChild(el('span', 'wb-ipa', '/' + result.phonetic + '/'));
+    if (isZh) sub.appendChild(el('span', 'wb-tag', '汉 → 英'));
+    if (result.phonetic) {
+      /* 中文条目这里是拼音，不加斜杠 */
+      sub.appendChild(el('span', 'wb-ipa', isZh ? result.phonetic : '/' + result.phonetic + '/'));
+    }
+    /* 中文查词时喇叭读的是对应的英文词，不是中文 */
+    const speakText = (isZh && result.ens && result.ens[0]) ? result.ens[0].word : result.text;
     const speak = el('button', 'wb-speak');
-    speak.title = '朗读';
+    speak.title = isZh ? '朗读英文' : '朗读';
     speak.appendChild(speakIcon());
-    speak.addEventListener('click', function () { playAudio(result.text, result.speakUrl); });
+    speak.addEventListener('click', function () { playAudio(speakText, result.speakUrl); });
     sub.appendChild(speak);
     (result.tags || []).forEach(function (t) {
       const isExam = /CET4|CET6|考研|高中|初中|GRE|TOEFL|IELTS/.test(t);
@@ -599,14 +653,43 @@
     }
 
     const body = el('div', 'wb-body');
-    const ol = el('ol', 'wb-trans');
-    (result.trans || []).forEach(function (t) {
-      ol.appendChild(posLine(t));
-    });
-    body.appendChild(ol);
+
+    if (isZh && (result.ens || []).length) {
+      /* 汉→英：英文对应词是主体 */
+      const list = el('div', 'wb-en-list');
+      result.ens.forEach(function (e) {
+        const box = el('div', 'wb-en');
+        const row = el('div', 'wb-en-head');
+        row.appendChild(el('span', 'wb-en-word', e.word));
+        if (e.pos) row.appendChild(el('span', 'wb-en-pos', e.pos));
+        box.appendChild(row);
+        if (e.zh) box.appendChild(el('div', 'wb-en-zh', e.zh));
+        list.appendChild(box);
+      });
+      body.appendChild(list);
+    } else {
+      const ol = el('ol', 'wb-trans');
+      (result.trans || []).forEach(function (t) {
+        ol.appendChild(posLine(t));
+      });
+      body.appendChild(ol);
+    }
 
     if (result.forms && result.forms.length) {
       body.appendChild(el('div', 'wb-forms', result.forms.join('　')));
+    }
+
+    /* 汉→英的词组示例 */
+    if (isZh && (result.phrases || []).length) {
+      const sec = el('div', 'wb-phr');
+      sec.appendChild(el('div', 'wb-sec', '词组'));
+      result.phrases.slice(0, 4).forEach(function (p) {
+        const item = el('div', 'wb-phr-item');
+        item.appendChild(el('div', 'wb-phr-zh', p.zh));
+        item.appendChild(el('div', 'wb-phr-en', p.en));
+        sec.appendChild(item);
+      });
+      body.appendChild(sec);
     }
 
     if (settings.showExamples && result.examples && result.examples.length) {

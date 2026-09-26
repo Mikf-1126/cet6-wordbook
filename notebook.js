@@ -314,7 +314,7 @@ function buildCard(w) {
   /* 音标 */
   if (w.phonetic) {
     const ipa = el('div', 'ipa');
-    ipa.appendChild(document.createTextNode('/' + w.phonetic + '/'));
+    ipa.appendChild(document.createTextNode(w.lang === 'zh' ? w.phonetic : '/' + w.phonetic + '/'));
     const sp = el('button');
     sp.title = '朗读';
     sp.appendChild(speakIcon());
@@ -476,7 +476,7 @@ function showReview() {
     if (body.querySelector('.rv-answer')) { reviewIdx++; showReview(); return; }
 
     const ans = el('div', 'rv-answer');
-    if (w.phonetic) ans.appendChild(el('div', 'rv-ipa', '/' + w.phonetic + '/'));
+    if (w.phonetic) ans.appendChild(el('div', 'rv-ipa', w.lang === 'zh' ? w.phonetic : '/' + w.phonetic + '/'));
     ans.appendChild(el('div', 'rv-trans', (w.trans || []).join('；') || '（暂无释义）'));
     if (w.examples && w.examples.length) {
       ans.appendChild(el('div', 'rv-ex', w.examples[0].en));

@@ -4,7 +4,7 @@
 
 **在任意网页上选中一个单词，即刻查词，一键存进单词本**
 
-![version](https://img.shields.io/badge/version-1.5.0-C9A96A?style=flat-square)
+![version](https://img.shields.io/badge/version-1.6.0-C9A96A?style=flat-square)
 ![manifest](https://img.shields.io/badge/Manifest-V3-1F1F1F?style=flat-square)
 ![license](https://img.shields.io/badge/license-MIT-A2803C?style=flat-square)
 ![platform](https://img.shields.io/badge/Edge%20%7C%20Chrome-supported-3B6D11?style=flat-square)
@@ -27,6 +27,7 @@
 - 查词用的是有道词典的公开接口，数据里自带**考纲标签**（CET4 / CET6 / 考研 / GRE / IELTS…），一眼知道这个词值不值得背
 - 存词时会自动抓取**你看到它的那句话**，以后复习能想起当时的语境
 - 选到变形词会自动还原成**原形**（`Practices` → `practice`），背的是原形而不是一堆变形
+- **双向查词**：选中英文查中文，选中中文查英文（`谈判` → `negotiate`）
 - 数据全在浏览器本地，只有你主动选中的文字会发给翻译接口
 
 ---
@@ -51,6 +52,21 @@
 
 卡片会把标题换成原形，并在音标下方标出你选中的是哪个形式。
 存进单词本时也存原形——先存 `surrendered` 再存 `surrender`，会合并成同一条。
+
+### 中文查英文
+
+选中中文同样能查：
+
+```
+谈判                      tán pàn   [汉 → 英]
+negotiate  vt.            （尤指在商业或政治上）谈判，磋商，洽谈…
+negotiations / talks
+词组
+和平谈判 → negotiation for peace; peace talks;
+```
+
+短词走汉英词典拿英文对应词（带词性和词组），整句直接中译英。
+卡片上的发音按钮读的是对应的**英文词**。
 
 ### 单词本
 
@@ -90,6 +106,10 @@
 </table>
 
 ![全部界面](docs/screenshots/02-overview.png)
+
+中文查英文的卡片长这样：
+
+![中文查英文](docs/screenshots/05-zh-to-en.png)
 
 **不想装扩展先看效果**：直接打开 [`docs/preview.html`](docs/preview.html)，是四个界面的静态复刻。
 

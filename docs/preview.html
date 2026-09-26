@@ -136,6 +136,30 @@ h2 .num{ font-family:var(--ff-latin); font-size:14px; color:var(--gold-2); margi
   font-size:11.5px; color:var(--ink-3); line-height:1.5;
 }
 .wb-lemma b{ font-family:var(--ff-latin); font-size:12.5px; color:var(--gold); font-weight:600; }
+
+/* 汉→英 */
+.wb-word.is-zh{ font-family:var(--ff-sans); font-size:24px; letter-spacing:.02em; }
+.wb-en{ margin-bottom:11px; }
+.wb-en:last-child{ margin-bottom:0; }
+.wb-en-head{ display:flex; align-items:baseline; gap:7px; flex-wrap:wrap; }
+.wb-en-word{
+  font-family:var(--ff-latin);
+  font-size:17.5px; font-weight:700; color:var(--gold);
+  letter-spacing:-.012em; line-height:1.3; word-break:break-word;
+}
+.wb-en-pos{
+  font-size:9.5px; line-height:1; color:var(--gold-2);
+  border:1px solid var(--hair); border-radius:20px;
+  padding:3px 7px; letter-spacing:.05em; font-weight:600;
+}
+.wb-en-zh{ font-size:12.5px; color:var(--ink-3); margin-top:4px; line-height:1.62; }
+.wb-sec{ font-size:9px; letter-spacing:.16em; color:var(--ink-4); font-weight:600; margin-bottom:9px; }
+.wb-phr{ margin-top:13px; }
+.wb-phr-item{ padding:7px 0; border-bottom:1px solid var(--hair-2); }
+.wb-phr-item:last-child{ border-bottom:none; padding-bottom:0; }
+.wb-phr-zh{ font-size:13px; color:var(--ink-2); }
+.wb-phr-en{ font-family:var(--ff-latin); font-size:12.5px; color:var(--ink-3); margin-top:2px; line-height:1.55; }
+.card.flat{ position:static; width:380px; max-width:100%; margin:0 auto; }
 .wb-body{ padding:13px 16px 16px; }
 .wb-trans{ margin:0; padding:0; list-style:none; }
 .wb-trans li{ font-size:15px; padding:3px 0; line-height:1.68; }
@@ -361,7 +385,8 @@ footer{
 
 <h2><span class="num">01</span>在网页上划词</h2>
 <p class="lead">选中文字后，选区旁出现「译」按钮；点它展开卡片。卡片是半透明磨砂玻璃，在任意网页背景上都能浮起来。<br>
-选中变形词（如 Practices）时，卡片会自动还原成原形，并标明你选中的是哪个形式。</p>
+选中变形词（如 Practices）时，卡片会自动还原成原形，并标明你选中的是哪个形式。<br>
+选中中文同样可用，见下一节。</p>
 
 <div class="mock">
   <p class="site">The Conversation · Food and farming</p>
@@ -404,7 +429,51 @@ footer{
   </div>
 </div>
 
-<h2><span class="num">02</span>扩展弹窗</h2>
+<h2><span class="num">02</span>中文查英文</h2>
+<p class="lead">输入中文也能查。短的走汉英词典拿英文对应词（带词性和词组），整句则直接中译英。</p>
+
+<div class="card flat">
+  <div class="wb-head">
+    <div class="wb-word is-zh">谈判</div>
+    <button class="wb-close">×</button>
+  </div>
+  <div class="wb-sub">
+    <span class="wb-tag">汉 → 英</span>
+    <span class="wb-ipa">tán pàn</span>
+    <button class="wb-speak"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg></button>
+  </div>
+  <div class="wb-body">
+    <div class="wb-en-list">
+      <div class="wb-en">
+        <div class="wb-en-head"><span class="wb-en-word">negotiate</span><span class="wb-en-pos">vt.</span></div>
+        <div class="wb-en-zh">（尤指在商业或政治上）谈判，磋商，洽谈；商定，达成协议；顺利通过，成功越过</div>
+      </div>
+      <div class="wb-en">
+        <div class="wb-en-head"><span class="wb-en-word">negotiations</span></div>
+      </div>
+      <div class="wb-en">
+        <div class="wb-en-head"><span class="wb-en-word">talks</span></div>
+      </div>
+    </div>
+    <div class="wb-phr">
+      <div class="wb-sec">词组</div>
+      <div class="wb-phr-item">
+        <div class="wb-phr-zh">和平谈判</div>
+        <div class="wb-phr-en">negotiation for peace; peace talks;</div>
+      </div>
+      <div class="wb-phr-item">
+        <div class="wb-phr-zh">开始与某人进行谈判</div>
+        <div class="wb-phr-en">open negotiations with sb.;</div>
+      </div>
+    </div>
+  </div>
+  <div class="wb-foot">
+    <button class="wb-btn">加入单词本</button>
+    <button class="wb-btn ghost">复制</button>
+  </div>
+</div>
+
+<h2><span class="num">03</span>扩展弹窗</h2>
 <p class="lead">点工具栏图标打开。所有面板改成卡片式，层级更清楚。</p>
 
 <div class="popup">
@@ -460,7 +529,7 @@ footer{
   </div>
 </div>
 
-<h2><span class="num">03</span>单词本条目</h2>
+<h2><span class="num">04</span>单词本条目</h2>
 <p class="lead">带原文上下文、来源页面和自己的备注。★ 收藏，✓ 标记已掌握。</p>
 
 <div class="nb">
@@ -490,7 +559,7 @@ footer{
   </div>
 </div>
 
-<h2><span class="num">04</span>复习模式</h2>
+<h2><span class="num">05</span>复习模式</h2>
 <p class="lead">先看英文回想，翻答案核对，记住的打勾。</p>
 
 <div class="review">

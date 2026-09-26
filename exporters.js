@@ -186,7 +186,7 @@
         i + 1,
         w.text,
         w.origin || '',
-        w.phonetic ? '/' + w.phonetic + '/' : '',
+        w.phonetic ? (w.lang === 'zh' ? w.phonetic : '/' + w.phonetic + '/') : '',
         (w.trans || []).join('；'),
         ex ? ex.en : '',
         ex ? ex.zh : '',
@@ -212,8 +212,8 @@
     list.forEach(function (w) {
       const back = [];
       if (w.phonetic) {
-        back.push('<div style="font-family:Georgia,serif;font-size:14px;color:#8A8279;letter-spacing:.02em">/' +
-                  escHTML(w.phonetic) + '</div>');
+        back.push('<div style="font-family:Georgia,serif;font-size:14px;color:#8A8279;letter-spacing:.02em">' +
+                  escHTML(w.lang === 'zh' ? w.phonetic : '/' + w.phonetic + '/') + '</div>');
       }
       if ((w.tags || []).length) {
         back.push('<div style="margin-top:6px">' + w.tags.map(function (t) {
@@ -268,7 +268,7 @@
           '<div class="main">' +
             '<div class="head">' +
               '<span class="word">' + escHTML(w.text) + '</span>' +
-              (w.phonetic ? '<span class="ipa">/' + escHTML(w.phonetic) + '/</span>' : '') +
+              (w.phonetic ? '<span class="ipa">' + escHTML(w.lang === 'zh' ? w.phonetic : '/' + w.phonetic + '/') + '</span>' : '') +
               (tags ? '<span class="tags">' + tags + '</span>' : '') +
               (w.mastered ? '<span class="flag">已掌握</span>' : '') +
               (w.starred ? '<span class="star">★</span>' : '') +
@@ -443,7 +443,7 @@
         const wordCell = [
           docxPara(docxRun(w.text, { bold: true, sz: 22, color: '1F1F1F' }), { after: 20, line: 240 }),
           w.phonetic
-            ? docxPara(docxRun('/' + w.phonetic + '/', { sz: 15, color: '8A8279' }), { after: 0, line: 240 })
+            ? docxPara(docxRun(w.lang === 'zh' ? w.phonetic : '/' + w.phonetic + '/', { sz: 15, color: '8A8279' }), { after: 0, line: 240 })
             : '',
           (w.tags || []).length
             ? docxPara(docxRun(w.tags.join(' · '), { sz: 14, color: 'C9A96A' }), { after: 0, line: 240 })
@@ -639,7 +639,7 @@
       const vals = [
         [idx + 1, true],
         [w.text, false],
-        [w.phonetic ? '/' + w.phonetic + '/' : '', false],
+        [w.phonetic ? (w.lang === 'zh' ? w.phonetic : '/' + w.phonetic + '/') : '', false],
         [(w.trans || []).join('\n'), false],
         [ex ? ex.en : '', false],
         [ex ? ex.zh : '', false],

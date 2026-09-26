@@ -164,8 +164,11 @@ function bindActions() {
       return;
     }
     const d = res.data;
-    box.appendChild(el('div', 'qr-word', d.text));
-    if (d.phonetic) box.appendChild(el('div', 'qr-sub', '/' + d.phonetic + '/'));
+    const isZh = d.lang === 'zh';
+    box.appendChild(el('div', isZh ? 'qr-word is-zh' : 'qr-word', d.text));
+    if (d.phonetic) {
+      box.appendChild(el('div', 'qr-sub', isZh ? d.phonetic : '/' + d.phonetic + '/'));
+    }
     if (d.inflected && d.query && d.query !== d.text) {
       const lemma = el('div', 'qr-lemma');
       lemma.appendChild(document.createTextNode('选中形式 '));
@@ -174,28 +177,46 @@ function bindActions() {
       lemma.appendChild(el('b', null, d.text));
       box.appendChild(lemma);
     }
-    if ((d.tags || []).length) {
+    if (isZh || (d.tags || []).length) {
       const tags = el('div', 'qr-tags');
-      d.tags.forEach(function (t) {
+      if (isZh) {
+        const i = document.createElement('i');
+        i.textContent = '汉 → 英';
+        tags.appendChild(i);
+      }
+      (d.tags || []).forEach(function (t) {
         const i = document.createElement('i');
         i.textContent = t;
         tags.appendChild(i);
       });
       box.appendChild(tags);
     }
-    const transBox = el('div', 'qr-trans');
-    (d.trans || []).forEach(function (t) {
-      const line = el('div');
-      const m = String(t).match(/^([a-z]{1,6}\.\s*)([\s\S]+)$/i);
-      if (m) {
-        line.appendChild(el('span', 'wb-pos', m[1].trim()));
-        line.appendChild(document.createTextNode(' ' + m[2]));
-      } else {
-        line.textContent = t;
-      }
-      transBox.appendChild(line);
-    });
-    box.appendChild(transBox);
+    if (isZh && (d.ens || []).length) {
+      /* 汉→英：英文对应词 */
+      const list = el('div', 'qr-ens');
+      d.ens.slice(0, 6).forEach(function (e) {
+        const row = el('div', 'qr-en');
+        row.appendChild(el('span', 'qr-en-word', e.word));
+        if (e.pos) row.appendChild(el('span', 'qr-en-pos', e.pos));
+        if (e.zh) row.appendChild(el('span', 'qr-en-zh', e.zh));
+        list.appendChild(row);
+      });
+      box.appendChild(list);
+    } else {
+      const transBox = el('div', 'qr-trans');
+      (d.trans || []).forEach(function (t) {
+        const line = el('div');
+        const m = String(t).match(/^([a-z]{1,6}\.\s*)([\s\S]+)$/i);
+        if (m) {
+          line.appendChild(el('span', 'wb-pos', m[1].trim()));
+          line.appendChild(document.createTextNode(' ' + m[2]));
+        } else {
+          line.textContent = t;
+        }
+        transBox.appendChild(line);
+      });
+      box.appendChild(transBox);
+    }
     if ((d.examples || []).length) {
       box.appendChild(el('div', 'qr-ex', d.examples[0].en + ' / ' + d.examples[0].zh));
     }

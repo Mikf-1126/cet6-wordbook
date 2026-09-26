@@ -96,6 +96,23 @@ async function fetchJSON(url) {
   }
 }
 
+/* ---------------------------- 语言判定 ---------------------------- */
+
+const CJK_RE = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;
+
+/** 含中日韩统一表意文字就当中文处理 */
+function detectLang(text) {
+  return CJK_RE.test(String(text || '')) ? 'zh' : 'en';
+}
+
+/** 中文「词/短语」而非整句：短、且不含句读 */
+function isChineseWordLike(text) {
+  const t = String(text || '').trim();
+  if (!t || t.length > 12) return false;
+  if (!CJK_RE.test(t)) return false;
+  return !/[。！？；，、,.!?;:：]/.test(t);
+}
+
 function isWordLike(text) {
   const t = text.trim();
   if (!t || t.length > 40) return false;
@@ -119,11 +136,111 @@ function stripTags(s) {
   return decodeEntities(String(s || '').replace(/<[^>]*>/g, ''));
 }
 
+/** 有道汉英（ce / ce_new）—— 中文查英文对应词 */
+function parseYoudaoCE(data, query) {
+  const out = {
+    text: query,
+    query: query,
+    lang: 'zh',
+    inflected: false,
+    kind: 'word',
+    phonetic: '',          // 这里放拼音
+    trans: [],
+    ens: [],               // [{ word, pos, zh }]
+    phrases: [],           // [{ en, zh }]
+    examples: [],
+    forms: [],
+    tags: [],
+    source: '有道汉英'
+  };
+
+  /* ce：英文对应词 + 词性 + 该英文词的中文解释 */
+  const cw = (data.ce && data.ce.word && data.ce.word[0]) || null;
+  if (cw) {
+    out.phonetic = pickString(cw.phone).trim();
+    (cw.trs || []).forEach(function (t) {
+      (t.tr || []).forEach(function (x) {
+        const l = (x && x.l) || {};
+        const pos = l.pos || '';
+        const zh = stripTags(l['#tran'] || '');
+        /* l.i 是「词级链接碎片」，一个 tr 对应一个译法：
+           ["", {#text:'take'}, {#text:'charge'}, {#text:'of'}] 要拼回 "take charge of"，
+           不能逐条当成独立单词，否则 take charge of 会被拆成三个词。 */
+        const items = l.i;
+        const pieces = [];
+        if (typeof items === 'string') {
+          if (items.trim()) pieces.push(items.trim());
+        } else if (Array.isArray(items)) {
+          items.forEach(function (one) {
+            if (typeof one === 'string') { if (one.trim()) pieces.push(one.trim()); }
+            else if (one && typeof one === 'object' && one['#text']) {
+              pieces.push(String(one['#text']).trim());
+            }
+          });
+        }
+        const wd = pieces.join(' ').replace(/\s+/g, ' ').trim();
+        if (wd) out.ens.push({ word: wd, pos: pos, zh: zh });
+      });
+    });
+  }
+
+  /* ce_new（新汉英大辞典）：补充更多对应词 + 词组示例 */
+  const nw = (data.ce_new && data.ce_new.word && data.ce_new.word[0]) || null;
+  if (nw) {
+    (nw.trs || []).forEach(function (t) {
+      (t.tr || []).forEach(function (x) {
+        const l = (x && x.l) || {};
+        const v = l.i;
+        const str = typeof v === 'string'
+          ? v
+          : (Array.isArray(v) ? v.filter(function (z) { return typeof z === 'string'; }).join('') : '');
+        str.split(/[;；]/).forEach(function (piece) {
+          const word = piece.replace(/[:：]\s*$/, '').trim();
+          if (!word) return;
+          const dup = out.ens.some(function (e) {
+            return e.word.toLowerCase() === word.toLowerCase();
+          });
+          if (!dup) out.ens.push({ word: word, pos: '', zh: '' });
+        });
+        (x.exam || []).forEach(function (ex) {
+          const i = ex && ex.i;
+          if (!i) return;
+          const en = pickString(i.f).trim();
+          const zh = pickString(i.n).trim();
+          if (en && zh) out.phrases.push({ en: en, zh: zh });
+        });
+      });
+    });
+  }
+
+  /* 双语例句 */
+  const pairs = (data.blng_sents_part && data.blng_sents_part['sentence-pair']) || [];
+  pairs.forEach(function (p) {
+    const en = stripTags(p.sentence || p['sentence-eng'] || '');
+    const zh = stripTags(p['sentence-translation'] || '');
+    if (en && zh) out.examples.push({ en: en, zh: zh });
+  });
+
+  if (!out.ens.length) throw new Error('汉英词典未收录该词');
+
+  /* 纯文本释义，供存储 / 导出使用 */
+  out.trans = out.ens.map(function (e) {
+    return (e.pos ? e.pos + ' ' : '') + e.word + (e.zh ? '　' + e.zh : '');
+  });
+
+  return out;
+}
+
+async function lookupYoudaoCE(text) {
+  return parseYoudaoCE(await fetchJSON(YD_DICT + '?q=' + encodeURIComponent(text)), text);
+}
+
 /** 有道词典 jsonapi —— 数据最全（音标 / 释义 / 词形 / 考纲标签 / 双语例句 / 原型） */
 function parseYoudaoDict(data, query) {
   const out = {
     text: query,
     query: query,
+    lang: 'en',
     inflected: false,
     kind: 'word',
     phonetic: '',
@@ -181,39 +298,48 @@ function parseYoudaoDict(data, query) {
 }
 
 /** 有道翻译（aidemo）—— 句子与词组保底，附带发音音频 */
-async function lookupYoudaoTrans(text) {
-  const url = YD_TRANS + '?q=' + encodeURIComponent(text) + '&from=en&to=zh-CHS';
+async function lookupYoudaoTrans(text, from, to) {
+  from = from || 'en';
+  to = to || 'zh-CHS';
+  const url = YD_TRANS + '?q=' + encodeURIComponent(text) + '&from=' + from + '&to=' + to;
   const data = await fetchJSON(url);
   const tr = (data.translation || []).filter(Boolean);
   if (!tr.length) throw new Error('无译文');
   return {
     text: text,
     query: text,
+    lang: from === 'zh-CHS' ? 'zh' : 'en',
     inflected: false,
     kind: 'sentence',
     trans: tr.map(decodeEntities),
     phonetic: '',
+    ens: [],
+    phrases: [],
     examples: [],
     forms: [],
     tags: [],
     speakUrl: data.speakUrl || '',
-    source: '有道翻译'
+    source: from === 'zh-CHS' ? '有道翻译（中→英）' : '有道翻译'
   };
 }
 
 /** MyMemory —— 最后兜底 */
-async function lookupMyMemory(text) {
-  const url = MM_API + '?q=' + encodeURIComponent(text) + '&langpair=' + encodeURIComponent('en|zh-CN');
+async function lookupMyMemory(text, pair) {
+  pair = pair || 'en|zh-CN';
+  const url = MM_API + '?q=' + encodeURIComponent(text) + '&langpair=' + encodeURIComponent(pair);
   const data = await fetchJSON(url);
   const t = data && data.responseData ? data.responseData.translatedText : '';
   if (!t) throw new Error('无译文');
   return {
     text: text,
     query: text,
+    lang: pair.indexOf('zh') === 0 ? 'zh' : 'en',
     inflected: false,
     kind: 'sentence',
     trans: [decodeEntities(t)],
     phonetic: '',
+    ens: [],
+    phrases: [],
     examples: [],
     forms: [],
     tags: [],
@@ -227,18 +353,28 @@ async function translate(raw) {
   if (text.length > 1000) throw new Error('内容过长，上限 1000 字符');
 
   const fails = [];
-  const wordLike = isWordLike(text);
+  const lang = detectLang(text);
 
-  if (wordLike) {
-    try { return await parseYoudaoDict(await fetchJSON(YD_DICT + '?q=' + encodeURIComponent(text)), text); }
-    catch (e) { fails.push('有道词典(' + e.message + ')'); }
+  if (lang === 'zh') {
+    /* 中文：短的先试汉英词典拿对应词，其余走整句中译英 */
+    if (isChineseWordLike(text)) {
+      try { return await lookupYoudaoCE(text); }
+      catch (e) { fails.push('汉英词典(' + e.message + ')'); }
+    }
+    try { return await lookupYoudaoTrans(text, 'zh-CHS', 'en'); }
+    catch (e) { fails.push('中译英(' + e.message + ')'); }
+    try { return await lookupMyMemory(text, 'zh-CN|en'); }
+    catch (e) { fails.push('MyMemory(' + e.message + ')'); }
+  } else {
+    if (isWordLike(text)) {
+      try { return await parseYoudaoDict(await fetchJSON(YD_DICT + '?q=' + encodeURIComponent(text)), text); }
+      catch (e) { fails.push('有道词典(' + e.message + ')'); }
+    }
+    try { return await lookupYoudaoTrans(text, 'en', 'zh-CHS'); }
+    catch (e) { fails.push('有道翻译(' + e.message + ')'); }
+    try { return await lookupMyMemory(text, 'en|zh-CN'); }
+    catch (e) { fails.push('MyMemory(' + e.message + ')'); }
   }
-
-  try { return await lookupYoudaoTrans(text); }
-  catch (e) { fails.push('有道翻译(' + e.message + ')'); }
-
-  try { return await lookupMyMemory(text); }
-  catch (e) { fails.push('MyMemory(' + e.message + ')'); }
 
   throw new Error('翻译失败：' + fails.join('，'));
 }
@@ -274,6 +410,9 @@ async function saveEntry(raw) {
     id: uid(),
     text: raw.text,
     origin: raw.origin || '',
+    lang: raw.lang === 'zh' ? 'zh' : 'en',
+    ens: raw.ens || [],
+    phrases: raw.phrases || [],
     kind: raw.kind === 'word' ? 'word' : 'sentence',
     phonetic: raw.phonetic || '',
     trans: raw.trans || [],
@@ -395,7 +534,8 @@ async function handle(msg) {
         if (seen.has(k)) return;
         seen.add(k);
         words.unshift(Object.assign({
-          id: uid(), origin: '', kind: 'word', phonetic: '', trans: [], examples: [], forms: [],
+          id: uid(), origin: '', lang: 'en', ens: [], phrases: [],
+          kind: 'word', phonetic: '', trans: [], examples: [], forms: [],
           tags: [], context: '', sourceTitle: '', sourceUrl: '', note: '',
           starred: false, mastered: false, hits: 1,
           createdAt: Date.now(), updatedAt: Date.now()
