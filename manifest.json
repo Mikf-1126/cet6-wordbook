@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "划词单词本 · CET-6",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "description": "在任意网页选中英文或中文，即时显示音标/拼音、释义、例句与考纲标签；支持变形词还原原形，可导出 Word / Excel / 网页 / Anki。",
   "minimum_chrome_version": "102",
   "permissions": [

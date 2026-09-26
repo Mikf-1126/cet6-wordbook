@@ -26,6 +26,7 @@
   let busy = false;
   let closedAt = 0;          // 上次关闭卡片的时间，用来防「刚关又被同一次点击重开」
   let closedText = '';
+  let slowTimer = null;      // 「网络较慢」提示的计时器
 
   /* ------------------------------ 样式 ------------------------------ */
 
@@ -386,6 +387,10 @@
 
   /* ------------------------------ 工具 ------------------------------ */
 
+  function clearSlow() {
+    if (slowTimer) { clearTimeout(slowTimer); slowTimer = null; }
+  }
+
   function el(tag, cls, text) {
     const n = document.createElement(tag);
     if (cls) n.className = cls;
@@ -559,6 +564,7 @@
   /* ------------------------------- 卡片 ------------------------------- */
 
   function closeCard() {
+    clearSlow();
     if (cardEl) { cardEl.remove(); cardEl = null; }
     current = null;
     pendingRange = null;
@@ -630,6 +636,7 @@
   }
 
   function renderCard(result) {
+    clearSlow();
     const root = uiRoot();
     if (cardEl) cardEl.remove();
 
@@ -755,6 +762,7 @@
   }
 
   function renderLoading(text) {
+    clearSlow();
     const root = uiRoot();
     if (cardEl) cardEl.remove();
     cardEl = el('div', 'wb-card');
@@ -764,16 +772,25 @@
     close.addEventListener('click', closeCard);
     head.appendChild(close);
     const body = el('div', 'wb-body');
-    body.appendChild(el('div', 'wb-state', '查询中…'));
+    const st = el('div', 'wb-state', '查询中…');
+    body.appendChild(st);
     cardEl.appendChild(head);
     cardEl.appendChild(body);
     root.appendChild(cardEl);
     makeDraggable(cardEl, head);
     placeCard(pendingRange);
+
+    /* 1.5 秒还没回来，说明网络慢或正在换源重试 —— 给个交代，别让用户干等 */
+    slowTimer = setTimeout(function () {
+      slowTimer = null;
+      const node = cardEl && cardEl.querySelector('.wb-state');
+      if (node) node.textContent = '网络较慢，正在换源重试…';
+    }, 1500);
   }
 
   /* 上下文失效时的专用卡片：说人话 + 一键刷新 */
   function renderNeedReload() {
+    clearSlow();
     const root = uiRoot();
     if (cardEl) cardEl.remove();
     cardEl = el('div', 'wb-card');
@@ -802,6 +819,7 @@
   }
 
   function renderError(text, message, retryFn) {
+    clearSlow();
     const root = uiRoot();
     if (cardEl) cardEl.remove();
     cardEl = el('div', 'wb-card');

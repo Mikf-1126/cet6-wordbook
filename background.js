@@ -1,7 +1,11 @@
 'use strict';
 
-/* 导出格式生成器（纯函数，见 exporters.js） */
-importScripts('exporters.js');
+/* 导出格式生成器（exporters.js）按需加载：
+   查词完全用不到它，没必要让每次 service worker 冷启动都求值一遍。 */
+function ensureExporters() {
+  if (typeof WBExport === 'undefined') importScripts('exporters.js');
+  return WBExport;
+}
 
 /* =========================================================================
  *  划词单词本 · 后台服务（MV3 Service Worker）
@@ -85,16 +89,93 @@ function uid() {
 
 /* --------------------------- 网络与解析 --------------------------- */
 
-async function fetchJSON(url) {
-  const res = await fetch(url, { credentials: 'omit', cache: 'no-store' });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const body = await res.text();
+const FETCH_TIMEOUT = 6000;   // 单次请求上限，超了就降级，绝不干等
+
+async function fetchJSON(url, timeoutMs) {
+  const ms = timeoutMs || FETCH_TIMEOUT;
+  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(function () { ctrl.abort(); }, ms) : null;
   try {
-    return JSON.parse(body);
+    /* cache 用默认值让浏览器 HTTP 缓存生效。
+       之前写死 no-store，同一个词查几次就要走几次完整网络往返。 */
+    const res = await fetch(url, {
+      credentials: 'omit',
+      cache: 'default',
+      signal: ctrl ? ctrl.signal : undefined
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const body = await res.text();
+    try {
+      return JSON.parse(body);
+    } catch (e) {
+      throw new Error('返回内容不是合法 JSON');
+    }
   } catch (e) {
-    throw new Error('返回内容不是合法 JSON');
+    if (e && (e.name === 'AbortError' || /abort/i.test(String(e.message)))) {
+      throw new Error('请求超时');
+    }
+    throw e;
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
+
+/* ---------------------------- 查询缓存 ----------------------------
+   同一个词查过就不再走网络。
+   内存做一级；storage.local 做二级（MV3 的 service worker 会被回收，只靠内存存不住）。
+   落盘是延迟批量做的，不占查询本身的耗时 —— 否则每次查词写几百 KB 反而更慢。 */
+const CACHE_KEY = 'lookupCache';
+const CACHE_MAX = 300;
+const CACHE_TTL = 3 * 24 * 3600 * 1000;
+
+let memCache = null;
+let cacheDirty = false;
+let cacheTimer = null;
+
+async function loadCache() {
+  if (memCache) return memCache;
+  try {
+    const o = await chrome.storage.local.get(CACHE_KEY);
+    memCache = o[CACHE_KEY] || {};
+  } catch (e) {
+    memCache = {};
+  }
+  return memCache;
+}
+
+function cacheGet(key) {
+  if (!memCache) return null;
+  const hit = memCache[key];
+  if (!hit) return null;
+  if (Date.now() - hit.at > CACHE_TTL) { delete memCache[key]; return null; }
+  return hit.data;
+}
+
+function scheduleCacheSave() {
+  cacheDirty = true;
+  if (cacheTimer) return;
+  cacheTimer = setTimeout(function () {
+    cacheTimer = null;
+    if (!cacheDirty || !memCache) return;
+    cacheDirty = false;
+    const o = {}; o[CACHE_KEY] = memCache;
+    try { chrome.storage.local.set(o).catch(function () {}); } catch (e) {}
+  }, 2500);
+}
+
+function cacheSet(key, data) {
+  if (!memCache) return;
+  memCache[key] = { at: Date.now(), data: data };
+  const keys = Object.keys(memCache);
+  if (keys.length > CACHE_MAX) {
+    keys.sort(function (a, b) { return memCache[a].at - memCache[b].at; });
+    keys.slice(0, keys.length - CACHE_MAX).forEach(function (k) { delete memCache[k]; });
+  }
+  scheduleCacheSave();
+}
+
+/* 词典接口失败后先跳过它一段时间，省掉每个词白等一个来回 */
+let dictDownUntil = 0;
 
 /* ---------------------------- 语言判定 ---------------------------- */
 
@@ -231,8 +312,8 @@ function parseYoudaoCE(data, query) {
   return out;
 }
 
-async function lookupYoudaoCE(text) {
-  return parseYoudaoCE(await fetchJSON(YD_DICT + '?q=' + encodeURIComponent(text)), text);
+async function lookupYoudaoCE(text, timeoutMs) {
+  return parseYoudaoCE(await fetchJSON(YD_DICT + '?q=' + encodeURIComponent(text), timeoutMs), text);
 }
 
 /** 有道词典 jsonapi —— 数据最全（音标 / 释义 / 词形 / 考纲标签 / 双语例句 / 原型） */
@@ -298,11 +379,11 @@ function parseYoudaoDict(data, query) {
 }
 
 /** 有道翻译（aidemo）—— 句子与词组保底，附带发音音频 */
-async function lookupYoudaoTrans(text, from, to) {
+async function lookupYoudaoTrans(text, from, to, timeoutMs) {
   from = from || 'en';
   to = to || 'zh-CHS';
   const url = YD_TRANS + '?q=' + encodeURIComponent(text) + '&from=' + from + '&to=' + to;
-  const data = await fetchJSON(url);
+  const data = await fetchJSON(url, timeoutMs);
   const tr = (data.translation || []).filter(Boolean);
   if (!tr.length) throw new Error('无译文');
   return {
@@ -324,10 +405,10 @@ async function lookupYoudaoTrans(text, from, to) {
 }
 
 /** MyMemory —— 最后兜底 */
-async function lookupMyMemory(text, pair) {
+async function lookupMyMemory(text, pair, timeoutMs) {
   pair = pair || 'en|zh-CN';
   const url = MM_API + '?q=' + encodeURIComponent(text) + '&langpair=' + encodeURIComponent(pair);
-  const data = await fetchJSON(url);
+  const data = await fetchJSON(url, timeoutMs);
   const t = data && data.responseData ? data.responseData.translatedText : '';
   if (!t) throw new Error('无译文');
   return {
@@ -352,27 +433,54 @@ async function translate(raw) {
   if (!text) throw new Error('没有选中任何内容');
   if (text.length > 1000) throw new Error('内容过长，上限 1000 字符');
 
+  /* 命中缓存直接返回，零网络往返 */
+  const ck = normalizeKey(text);
+  await loadCache();
+  const hit = cacheGet(ck);
+  if (hit) return hit;
+
+  const out = await translateFresh(text);
+  cacheSet(ck, out);
+  return out;
+}
+
+/* 整个降级链的总时间预算。单看每一档都能等 6 秒，
+   但三档串行就是 18 秒 —— 网络真出问题时用户会以为卡死了。
+   这里给一个总上限，每一档只能用「剩余预算」。 */
+const TOTAL_BUDGET = 12000;
+
+async function translateFresh(text) {
   const fails = [];
   const lang = detectLang(text);
+  const deadline = Date.now() + TOTAL_BUDGET;
+  const budget = function (want) {
+    return Math.max(1200, Math.min(want, deadline - Date.now()));
+  };
 
   if (lang === 'zh') {
     /* 中文：短的先试汉英词典拿对应词，其余走整句中译英 */
     if (isChineseWordLike(text)) {
-      try { return await lookupYoudaoCE(text); }
+      try { return await lookupYoudaoCE(text, budget(6000)); }
       catch (e) { fails.push('汉英词典(' + e.message + ')'); }
     }
-    try { return await lookupYoudaoTrans(text, 'zh-CHS', 'en'); }
+    try { return await lookupYoudaoTrans(text, 'zh-CHS', 'en', budget(5000)); }
     catch (e) { fails.push('中译英(' + e.message + ')'); }
-    try { return await lookupMyMemory(text, 'zh-CN|en'); }
+    try { return await lookupMyMemory(text, 'zh-CN|en', budget(5000)); }
     catch (e) { fails.push('MyMemory(' + e.message + ')'); }
   } else {
-    if (isWordLike(text)) {
-      try { return await parseYoudaoDict(await fetchJSON(YD_DICT + '?q=' + encodeURIComponent(text)), text); }
-      catch (e) { fails.push('有道词典(' + e.message + ')'); }
+    if (isWordLike(text) && Date.now() > dictDownUntil) {
+      try {
+        return await parseYoudaoDict(
+          await fetchJSON(YD_DICT + '?q=' + encodeURIComponent(text), budget(6000)), text);
+      } catch (e) {
+        /* 被拦或超时：两分钟内不再试它，省掉每个词一个来回的等待 */
+        if (/403|超时/.test(e.message)) dictDownUntil = Date.now() + 120000;
+        fails.push('有道词典(' + e.message + ')');
+      }
     }
-    try { return await lookupYoudaoTrans(text, 'en', 'zh-CHS'); }
+    try { return await lookupYoudaoTrans(text, 'en', 'zh-CHS', budget(5000)); }
     catch (e) { fails.push('有道翻译(' + e.message + ')'); }
-    try { return await lookupMyMemory(text, 'en|zh-CN'); }
+    try { return await lookupMyMemory(text, 'en|zh-CN', budget(5000)); }
     catch (e) { fails.push('MyMemory(' + e.message + ')'); }
   }
 
@@ -465,6 +573,7 @@ function exportName(fmt) {
 }
 
 async function doExport(fmt) {
+  ensureExporters();
   const words = await getWords();
   const filename = exportName(fmt);
 
