@@ -4,6 +4,24 @@
 
 ---
 
+## [1.7.1] — 2026-09-27
+
+### 修复
+
+- **标题 / 句首的大写单词被原样存进单词本**。
+  在「AI Leaders Are Standing on a **Liability** Landmine」里选中 `Liability`，
+  卡片和单词本里都是大写 —— 但背单词要的是小写形式。
+  现在改用有道返回的 `return-phrase` 作为规范词形：
+  普通词转小写（`Liability` → `liability`、`The` → `the`、`LIABILITY` → `liability`），
+  **专有名词保持大写**（`London`、`China`、`AI`、`Palantir`、`iPhone`）。
+  让词典自己判断，比任何启发式规则都准。
+
+### 开发
+
+- `dev/selftest.js` 新增 9 个大小写用例，并把「选中 → 入库」的转换过程打印出来方便核对
+
+---
+
 ## [1.7.0] — 2026-09-26
 
 查词速度优化。

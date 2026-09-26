@@ -341,15 +341,21 @@ function parseYoudaoDict(data, query) {
 
       /* 词形还原：有道会给出 prototype（原型）。不同则说明用户选中的是变形词。
          个别同形词有道判得不对，用 LEMMA_FIX 纠正。 */
-      let base = pickString(w.prototype).trim();
       const q = String(query).trim();
+      const rp = pickString(w['return-phrase']).trim();
+      let base = pickString(w.prototype).trim();
       if (base && base.toLowerCase() !== q.toLowerCase()) {
         const fixed = LEMMA_FIX[q.toLowerCase()];
         if (fixed) base = fixed;
         out.text = base;
         out.inflected = true;
       } else {
-        out.text = q;
+        /* 没有 prototype 说明本身就是原形。但用户选中的可能是句子开头或标题里的大写
+           （在「Liability Landmine」里选中 Liability），背单词要的是小写。
+           词典的 return-phrase 会给规范词形：普通词转小写（Liability → liability），
+           专有名词保持大写（London → London、AI → AI），比任何启发式规则都准。
+           所以这里以词典为准，而不是照抄用户选中的原文。 */
+        out.text = rp || q;
       }
 
       const trs = w.trs || [];

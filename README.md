@@ -4,7 +4,7 @@
 
 **在任意网页上选中一个单词，即刻查词，一键存进单词本**
 
-![version](https://img.shields.io/badge/version-1.7.0-C9A96A?style=flat-square)
+![version](https://img.shields.io/badge/version-1.7.1-C9A96A?style=flat-square)
 ![manifest](https://img.shields.io/badge/Manifest-V3-1F1F1F?style=flat-square)
 ![license](https://img.shields.io/badge/license-MIT-A2803C?style=flat-square)
 ![platform](https://img.shields.io/badge/Edge%20%7C%20Chrome-supported-3B6D11?style=flat-square)
